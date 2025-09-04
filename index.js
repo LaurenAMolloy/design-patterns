@@ -45,31 +45,91 @@ const fetchDataAxios = async (searchTerm) => {
            //i: "tt0848228"
         }
     });
+    //If there is an error then return an empty array
+    if (response.data.Error){
+        return [];
+    }
     //console.log("Response Data",response.data);
     //response has capital s = this is non standard
     return response.data.Search
 };
 
-
+const root = document.querySelector('.autocomplete');
+root.innerHTML = `
+    <label><b>Search For a Movie</b></label>
+    <input name="input" class="input">
+    <div class="dropdown">
+        <div class="dropdown-menu">
+            <div class="dropdown-content results"></div>
+        </div>
+    </div>
+`
 const input = document.querySelector("input");
-
+const dropdown = document.querySelector(".dropdown");
+const resultsWrapper = document.querySelector(".results");
 
 const onInput = async e => {
     //fetch is an async function
     //If we want to access the data we must treat it as async
     const movies = await fetchDataAxios(e.target.value);
-    console.log(movies);
+    //console.log(movies);
+
+    if(!movies.length){
+        dropdown.classList.remove("is-active")
+        return
+    };
+
+    //Remove any existing results
+    resultsWrapper.innerHtml = "";
+
+    dropdown.classList.add('is-active');
     //iterate over the movies
     for(let movie of movies)  {
-        const div = document.createElement("div");
+        const option = document.createElement("a");
+        const imgSrc = movie.Poster === 'N/A' ? "": movie.Poster;
 
-        div.innerHTML = `
-        <img src="${movie.Poster}"/>
-        <h1>${movie.Title}</h1>
+        option.classList.add("dropdown-item");
+        option.innerHTML = `
+        <img src="${imgSrc}"/>
+        ${movie.Title}
         `;
-        document.querySelector('#target').appendChild(div)
+
+        option.addEventListener("click", () => {
+            dropdown.classList.remove("is-active");
+            input.value = movie.Title;
+            //helper Function
+            onMovieSelect(movie)
+        });
+
+
+
+        resultsWrapper.appendChild(option);
     }
 };
 
+
+
 //We could have used debounce in the event listener too
-input.addEventListener("input", debounce(onInput, 500));
+input.addEventListener("input", debounce(onInput, 1000));
+
+//Events bubble
+//If someone clicks on an element it triggers an event
+//If an event is not handled there it will bubble!
+document.addEventListener('click', e => {
+    //console.log(e.target)
+    if(!root.contains(e.target)){
+        dropdown.classList.remove('is-active');
+    }
+});
+
+const onMovieSelect = async movie => {
+    const response = await axios.get("http://www.omdbapi.com/", {
+        params: {
+           apikey: "be9e5da5",
+           //s: searchTerm
+           i: "tt0848228"
+        }
+    });
+
+    console.log(response.data);
+}
